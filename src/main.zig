@@ -2,6 +2,8 @@ const std = @import("std");
 
 const lib = @import("lib.zig");
 
+const whoami = @import("whoami.zig");
+
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
@@ -17,7 +19,7 @@ pub fn main() !void {
     if (args.len < 2) {
         //
     } else if (std.mem.eql(u8, args[1], "left")) {
-        //
+        try whoami.run(allocator, stdout.any());
     } else if (std.mem.eql(u8, args[1], "right")) {
         //
     }
