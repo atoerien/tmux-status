@@ -18,7 +18,7 @@ fn uptimeDarwin() !isize {
 }
 
 fn uptimeLinux() !isize {
-    var sysinfo: c.sysinfo = undefined;
+    var sysinfo: c.struct_sysinfo = undefined;
     const ret = c.sysinfo(&sysinfo);
     if (ret == -1) {
         const errno = std.c._errno().*;
