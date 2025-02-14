@@ -1,9 +1,5 @@
 const std = @import("std");
 
-const c = @cImport({
-    @cInclude("unistd.h");
-});
-
 const lib = @import("lib.zig");
 
 fn hostname(allocator: std.mem.Allocator) ![]const u8 {
@@ -18,5 +14,5 @@ pub fn run(allocator: std.mem.Allocator, stdout: std.io.AnyWriter) !void {
     defer allocator.free(s);
     try lib.color(stdout, .bold);
     try stdout.print("{s}", .{s});
-    try lib.color(stdout, .none);
+    try lib.color(stdout, .end);
 }

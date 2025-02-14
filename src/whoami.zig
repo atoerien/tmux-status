@@ -37,6 +37,6 @@ pub fn run(allocator: std.mem.Allocator, stdout: std.io.AnyWriter) !void {
     const s = try whoami(allocator);
     defer allocator.free(s);
     try lib.color(stdout, .bold);
-    try stdout.print("{s}", .{s});
+    try stdout.print("{s}@", .{s});
     try lib.color(stdout, .none);
 }
