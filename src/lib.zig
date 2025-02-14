@@ -61,3 +61,16 @@ pub fn errnoToZigErr(err: anytype) anyerror {
 
     return error.Unexpected;
 }
+
+pub fn getnow() !isize {
+    var ret: std.posix.timespec = undefined;
+    try std.posix.clock_gettime(std.posix.CLOCK.REALTIME, &ret);
+    return ret.tv_sec;
+}
+
+pub fn getsysctl(comptime T: type, name: [*:0]const u8) !T {
+    var ret: T = undefined;
+    var len: usize = @sizeOf(T);
+    try std.posix.sysctlbynameZ(name, &ret, &len, null, 0);
+    return ret;
+}
