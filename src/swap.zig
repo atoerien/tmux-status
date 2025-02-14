@@ -20,8 +20,8 @@ fn swapDarwin() !Swap {
     const swapusage = try lib.getsysctl(c.xsw_usage, "vm.swapusage");
 
     return .{
-        .used = swapusage.xsu_used / 1024,
-        .total = swapusage.xsu_total / 1024,
+        .used = swapusage.xsu_used,
+        .total = swapusage.xsu_total,
     };
 }
 
@@ -38,8 +38,8 @@ fn swapLinux() !Swap {
     const free = sysinfo.freeswap * mem_unit;
 
     return .{
-        .used = (total - free) / 1024,
-        .total = total / 1024,
+        .used = total - free,
+        .total = total,
     };
 }
 
@@ -61,18 +61,8 @@ pub fn run(stdout: std.io.AnyWriter) !void {
     const usage = 100 * used / total;
 
     try lib.color(stdout, .{ .color_attr = .{ .attr = "bold", .bg = "brightgreen", .fg = "black" } });
-
-    var unit: []const u8 = undefined;
-    if (total >= 1048576) {
-        try stdout.print("s{d:.1}", .{total / 1048576});
-        unit = "G";
-    } else if (total >= 1024) {
-        try stdout.print("s{d:.0}", .{total / 1024});
-        unit = "M";
-    } else {
-        try stdout.print("s{d:.0}", .{total});
-        unit = "K";
-    }
+    _ = try stdout.write("s");
+    const unit = try lib.printSize(stdout, total);
     try lib.color(stdout, .none);
 
     try lib.color(stdout, .{ .color = .{ .bg = "brightgreen", .fg = "black" } });

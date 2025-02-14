@@ -37,6 +37,37 @@ pub fn color(out: std.io.AnyWriter, col: Color) !void {
     }
 }
 
+/// formats and prints val to stdout
+/// returns unit ("k", "M", "G", etc)
+pub fn printSize(stdout: std.io.AnyWriter, val: f64) ![]const u8 {
+    var size = val;
+
+    if (size < 1) {
+        try stdout.print("{d:3}", .{size});
+        return "";
+    }
+
+    const units = [_][]const u8{ "", "k", "M", "G", "T", "P", "E", "Z" };
+    for (units) |unit| {
+        if (@abs(size) < 999.5) {
+            if (@abs(size) < 99.95) {
+                if (@abs(size) < 9.995) {
+                    try stdout.print("{d:1.2}", .{size});
+                    return unit;
+                }
+                try stdout.print("{d:2.1}", .{size});
+                return unit;
+            }
+            try stdout.print("{d:3.0}", .{size});
+            return unit;
+        }
+        size /= 1024;
+    }
+
+    try stdout.print("{d:3.1}", .{size});
+    return "Y";
+}
+
 const errno_map = errno_map: {
     var max_value = 0;
     for (std.enums.values(std.c.E)) |v|

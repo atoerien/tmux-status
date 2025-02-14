@@ -38,8 +38,8 @@ fn memoryDarwin() !Memory {
     const avail = page_size * pages;
 
     return .{
-        .used = (total - avail) / 1024,
-        .total = total / 1024,
+        .used = total - avail,
+        .total = total,
     };
 }
 
@@ -56,8 +56,8 @@ fn memoryLinux() !Memory {
     const avail = (sysinfo.freeram + sysinfo.sharedram + sysinfo.bufferram) * mem_unit;
 
     return .{
-        .used = (total - avail) / 1024,
-        .total = total / 1024,
+        .used = total - avail,
+        .total = total,
     };
 }
 
@@ -81,18 +81,7 @@ pub fn run(stdout: std.io.AnyWriter) !void {
     const fg = if (usage > 90) "brightyellow" else "brightwhite";
 
     try lib.color(stdout, .{ .color_attr = .{ .attr = "bold", .bg = "green", .fg = "brightwhite" } });
-
-    var unit: []const u8 = undefined;
-    if (total >= 1048576) {
-        try stdout.print("{d:.1}", .{total / 1048576});
-        unit = "G";
-    } else if (total >= 1024) {
-        try stdout.print("{d:.0}", .{total / 1024});
-        unit = "M";
-    } else {
-        try stdout.print("{d:.0}", .{total});
-        unit = "K";
-    }
+    const unit = try lib.printSize(stdout, total);
     try lib.color(stdout, .none);
 
     try lib.color(stdout, .{ .color = .{ .bg = "green", .fg = "brightwhite" } });
