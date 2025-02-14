@@ -22,4 +22,14 @@ pub fn build(b: *std.Build) void {
 
     const run_step = b.step("run", "Run tmux-status");
     run_step.dependOn(&run_cmd.step);
+
+    // https://zigtools.org/zls/guides/build-on-save/
+    const exe_check = b.addExecutable(.{
+        .name = "foo",
+        .root_source_file = b.path("src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    const check = b.step("check", "Check if foo compiles");
+    check.dependOn(&exe_check.step);
 }
