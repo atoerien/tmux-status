@@ -23,7 +23,6 @@ fn whoami(allocator: std.mem.Allocator) ![]const u8 {
     var result: ?*c.passwd = undefined;
     const ret = c.getpwuid_r(c.getuid(), &pwd, @ptrCast(buf), bufsize, &result);
     if (ret != 0) {
-        allocator.free(buf);
         return lib.errnoToZigErr(ret);
     }
     if (result == null) {
