@@ -3,6 +3,7 @@ const std = @import("std");
 const lib = @import("lib.zig");
 
 const disk = @import("disk.zig");
+const hostname = @import("hostname.zig");
 const memory = @import("memory.zig");
 const swap = @import("swap.zig");
 const uptime = @import("uptime.zig");
@@ -24,6 +25,7 @@ pub fn main() !void {
         //
     } else if (std.mem.eql(u8, args[1], "left")) {
         try whoami.run(allocator, stdout.any());
+        try hostname.run(allocator, stdout.any());
     } else if (std.mem.eql(u8, args[1], "right")) {
         try memory.run(stdout.any());
         try swap.run(stdout.any());
