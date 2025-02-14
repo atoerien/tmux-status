@@ -2,6 +2,7 @@ const std = @import("std");
 
 const lib = @import("lib.zig");
 
+const disk = @import("disk.zig");
 const memory = @import("memory.zig");
 const swap = @import("swap.zig");
 const uptime = @import("uptime.zig");
@@ -26,6 +27,7 @@ pub fn main() !void {
     } else if (std.mem.eql(u8, args[1], "right")) {
         try memory.run(stdout.any());
         try swap.run(stdout.any());
+        try disk.run(stdout.any());
         try uptime.run(stdout.any());
     }
     try bw.flush();
