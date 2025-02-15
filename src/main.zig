@@ -6,6 +6,7 @@ const disk = @import("disk.zig");
 const hostname = @import("hostname.zig");
 const load_average = @import("load_average.zig");
 const memory = @import("memory.zig");
+const processes = @import("processes.zig");
 const swap = @import("swap.zig");
 const uptime = @import("uptime.zig");
 const whoami = @import("whoami.zig");
@@ -29,6 +30,7 @@ pub fn main() !void {
         try hostname.run(allocator, stdout.any());
     } else if (std.mem.eql(u8, args[1], "right")) {
         try load_average.run(stdout.any());
+        try processes.run(allocator, stdout.any());
         try memory.run(stdout.any());
         try swap.run(stdout.any());
         try disk.run(stdout.any());
