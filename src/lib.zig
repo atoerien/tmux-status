@@ -42,8 +42,8 @@ pub fn color(out: std.io.AnyWriter, col: Color) !void {
 pub fn printSize(stdout: std.io.AnyWriter, val: f64) ![]const u8 {
     var size = val;
 
-    if (size < 1) {
-        try stdout.print("{d:3}", .{size});
+    if (@abs(size) < 1) {
+        try stdout.print("{d:1.2}", .{size});
         return "";
     }
 
