@@ -12,6 +12,12 @@ pub fn build(b: *std.Build) void {
         .link_libc = true,
     });
 
+    // src/disk_io.zig
+    if (target.result.isDarwin()) {
+        exe.linkFramework("CoreFoundation");
+        exe.linkFramework("IOKit");
+    }
+
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);

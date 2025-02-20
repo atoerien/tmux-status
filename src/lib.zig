@@ -4,6 +4,12 @@ const std = @import("std");
 pub const Context = struct {
     allocator: std.mem.Allocator,
     stdout: std.io.AnyWriter,
+    cacheDir: []const u8,
+
+    pub fn getModuleCachePath(self: *const Context, module: []const u8) ![]u8 {
+        const paths = [_][]const u8{ self.cacheDir, module };
+        return std.fs.path.join(self.allocator, &paths);
+    }
 };
 
 pub const Color = union(enum) {
@@ -98,10 +104,56 @@ pub fn errnoToZigErr(err: anytype) anyerror {
     return error.Unexpected;
 }
 
+pub fn runProcess(allocator: std.mem.Allocator, argv: []const []const u8, max_output_bytes: usize) ![]u8 {
+    var child = std.process.Child.init(argv, allocator);
+    child.stdout_behavior = .Pipe;
+    child.stderr_behavior = .Pipe;
+
+    var stdout = std.ArrayList(u8).init(allocator);
+    defer stdout.deinit();
+    var stderr = std.ArrayList(u8).init(allocator);
+    defer stderr.deinit();
+
+    try child.spawn();
+    try child.collectOutput(&stdout, &stderr, max_output_bytes);
+    const term = try child.wait();
+
+    if (term != .Exited or term.Exited != 0) {
+        return error.ChildProcessError;
+    }
+
+    return stdout.toOwnedSlice();
+}
+
+pub fn getTmuxSocketPath(allocator: std.mem.Allocator) ![]u8 {
+    const argv = [_][]const u8{ "tmux", "display-message", "-pF", "#{socket_path}" };
+
+    return runProcess(allocator, &argv, 1024);
+}
+
+pub fn getCacheDir(allocator: std.mem.Allocator) ![]u8 {
+    const socketPath = try getTmuxSocketPath(allocator);
+    defer allocator.free(socketPath);
+    const dir = std.fs.path.dirname(socketPath) orelse unreachable;
+    const cacheDir = try std.fmt.allocPrint(allocator, "{s}/cache", .{dir});
+    // ensure dir exists
+    std.fs.makeDirAbsolute(cacheDir) catch |err| switch (err) {
+        error.PathAlreadyExists => {}, // ignore
+        else => |e| return e,
+    };
+    return cacheDir;
+}
+
 pub fn getNow() !isize {
     var ret: std.posix.timespec = undefined;
     try std.posix.clock_gettime(std.posix.CLOCK.REALTIME, &ret);
     return ret.tv_sec;
+}
+
+pub fn getNowNanos() !i128 {
+    var ret: std.posix.timespec = undefined;
+    try std.posix.clock_gettime(std.posix.CLOCK.REALTIME, &ret);
+    return @as(i128, ret.tv_sec) * std.time.ns_per_s + ret.tv_nsec;
 }
 
 pub fn getsysctl(comptime T: type, name: [*:0]const u8) !T {

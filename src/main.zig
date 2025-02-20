@@ -5,6 +5,7 @@ const lib = @import("lib.zig");
 const cpu_count = @import("cpu_count.zig");
 const cpu_freq = @import("cpu_freq.zig");
 const disk = @import("disk.zig");
+const disk_io = @import("disk_io.zig");
 const hostname = @import("hostname.zig");
 const load_average = @import("load_average.zig");
 const memory = @import("memory.zig");
@@ -25,9 +26,13 @@ pub fn main() !void {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
+    const cacheDir = try lib.getCacheDir(allocator);
+    defer allocator.free(cacheDir);
+
     const ctx = lib.Context{
         .allocator = allocator,
         .stdout = stdout.any(),
+        .cacheDir = cacheDir,
     };
 
     if (args.len < 2) {
@@ -43,6 +48,7 @@ pub fn main() !void {
         try memory.run(&ctx);
         try swap.run(&ctx);
         try disk.run(&ctx);
+        try disk_io.run(&ctx);
         try uptime.run(&ctx);
     }
     try bw.flush();
