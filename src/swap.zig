@@ -53,12 +53,14 @@ fn swap() !Swap {
     }
 }
 
-pub fn run(stdout: std.io.AnyWriter) !void {
+pub fn run(ctx: *const lib.Context) !void {
     const swp = try swap();
 
     const used: f64 = @floatFromInt(swp.used);
     const total: f64 = @floatFromInt(swp.total);
     const usage = 100 * used / total;
+
+    const stdout = ctx.stdout;
 
     try lib.color(stdout, .{ .color_attr = .{ .attr = "bold", .bg = "brightgreen", .fg = "black" } });
     _ = try stdout.write("s");

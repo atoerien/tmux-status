@@ -33,9 +33,12 @@ fn whoami(allocator: std.mem.Allocator) ![]const u8 {
     return s;
 }
 
-pub fn run(allocator: std.mem.Allocator, stdout: std.io.AnyWriter) !void {
-    const s = try whoami(allocator);
-    defer allocator.free(s);
+pub fn run(ctx: *const lib.Context) !void {
+    const s = try whoami(ctx.allocator);
+    defer ctx.allocator.free(s);
+
+    const stdout = ctx.stdout;
+
     try lib.color(stdout, .bold);
     try stdout.print("{s}@", .{s});
     try lib.color(stdout, .none);

@@ -9,9 +9,12 @@ fn hostname(allocator: std.mem.Allocator) ![]const u8 {
     return try std.posix.gethostname(@ptrCast(&buf));
 }
 
-pub fn run(allocator: std.mem.Allocator, stdout: std.io.AnyWriter) !void {
-    const s = try hostname(allocator);
-    defer allocator.free(s);
+pub fn run(ctx: *const lib.Context) !void {
+    const s = try hostname(ctx.allocator);
+    defer ctx.allocator.free(s);
+
+    const stdout = ctx.stdout;
+
     try lib.color(stdout, .bold);
     try stdout.print("{s}", .{s});
     try lib.color(stdout, .end);

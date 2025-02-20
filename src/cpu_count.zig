@@ -16,8 +16,8 @@ fn cpuCount() !usize {
     return @intCast(cpus);
 }
 
-pub fn run(stdout: std.io.AnyWriter) !void {
+pub fn run(ctx: *const lib.Context) !void {
     const cpus = try cpuCount();
 
-    try stdout.print("{}x", .{cpus});
+    try ctx.stdout.print("{}x", .{cpus});
 }

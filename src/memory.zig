@@ -27,9 +27,7 @@ fn memoryDarwin() !Memory {
     const ret = c.host_statistics64(host, c.HOST_VM_INFO64, @ptrCast(&stats), &count);
     switch (std.c.getKernError(ret)) {
         .SUCCESS => {},
-        else => |err| {
-            return std.c.unexpectedKernError(err);
-        },
+        else => |err| return std.c.unexpectedKernError(err),
     }
 
     const page_size = @as(usize, @intCast(c.getpagesize()));
@@ -71,7 +69,7 @@ fn memory() !Memory {
     }
 }
 
-pub fn run(stdout: std.io.AnyWriter) !void {
+pub fn run(ctx: *const lib.Context) !void {
     const mem = try memory();
 
     const used: f64 = @floatFromInt(mem.used);
@@ -79,6 +77,8 @@ pub fn run(stdout: std.io.AnyWriter) !void {
     const usage = 100 * used / total;
 
     const fg = if (usage > 90) "brightyellow" else "brightwhite";
+
+    const stdout = ctx.stdout;
 
     try lib.color(stdout, .{ .color_attr = .{ .attr = "bold", .bg = "green", .fg = "brightwhite" } });
     const unit = try lib.printSize(stdout, total);

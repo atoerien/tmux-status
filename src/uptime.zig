@@ -10,7 +10,7 @@ const c = @cImport({
 const lib = @import("lib.zig");
 
 fn uptimeDarwin() !isize {
-    const now = try lib.getnow();
+    const now = try lib.getNow();
 
     const boottime = try lib.getsysctl(std.posix.timespec, "kern.boottime");
 
@@ -37,8 +37,10 @@ fn uptime() !isize {
     }
 }
 
-pub fn run(stdout: std.io.AnyWriter) !void {
+pub fn run(ctx: *const lib.Context) !void {
     const u = try uptime();
+
+    const stdout = ctx.stdout;
 
     try lib.color(stdout, .{ .color = .{ .bg = "white", .fg = "blue" } });
     if (u > 86400) {

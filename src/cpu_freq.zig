@@ -57,8 +57,10 @@ fn cpuFreq(allocator: std.mem.Allocator) !f64 {
     }
 }
 
-pub fn run(allocator: std.mem.Allocator, stdout: std.io.AnyWriter) !void {
-    const freq = try cpuFreq(allocator);
+pub fn run(ctx: *const lib.Context) !void {
+    const freq = try cpuFreq(ctx.allocator);
+
+    const stdout = ctx.stdout;
 
     try lib.color(stdout, .{ .color_attr = .{ .attr = "bold", .bg = "cyan", .fg = "brightwhite" } });
     try stdout.print("{d:.2}", .{freq});

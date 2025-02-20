@@ -32,12 +32,14 @@ fn disk() !Disk {
     };
 }
 
-pub fn run(stdout: std.io.AnyWriter) !void {
+pub fn run(ctx: *const lib.Context) !void {
     const df = try disk();
 
     const used: f64 = @floatFromInt(df.used);
     const total: f64 = @floatFromInt(df.total);
     const usage = 100 * used / total;
+
+    const stdout = ctx.stdout;
 
     try lib.color(stdout, .{ .color_attr = .{ .attr = "bold", .bg = "magenta", .fg = "brightwhite" } });
     const unit = try lib.printSize(stdout, total);

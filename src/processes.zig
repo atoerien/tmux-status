@@ -57,8 +57,10 @@ fn processes(allocator: std.mem.Allocator) !usize {
     }
 }
 
-pub fn run(allocator: std.mem.Allocator, stdout: std.io.AnyWriter) !void {
-    const p = try processes(allocator);
+pub fn run(ctx: *const lib.Context) !void {
+    const p = try processes(ctx.allocator);
+
+    const stdout = ctx.stdout;
 
     try lib.color(stdout, .{ .color_attr = .{ .attr = "bold", .bg = "yellow", .fg = "white" } });
     try stdout.print("{}", .{p});

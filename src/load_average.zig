@@ -17,8 +17,10 @@ fn load() !f64 {
     return loadavg;
 }
 
-pub fn run(stdout: std.io.AnyWriter) !void {
+pub fn run(ctx: *const lib.Context) !void {
     const l = try load();
+
+    const stdout = ctx.stdout;
 
     try lib.color(stdout, .{ .color = .{ .bg = "brightyellow", .fg = "black" } });
     try stdout.print("{d:.2}", .{l});

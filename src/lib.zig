@@ -1,6 +1,11 @@
 const builtin = @import("builtin");
 const std = @import("std");
 
+pub const Context = struct {
+    allocator: std.mem.Allocator,
+    stdout: std.io.AnyWriter,
+};
+
 pub const Color = union(enum) {
     esc,
     none,
@@ -93,7 +98,7 @@ pub fn errnoToZigErr(err: anytype) anyerror {
     return error.Unexpected;
 }
 
-pub fn getnow() !isize {
+pub fn getNow() !isize {
     var ret: std.posix.timespec = undefined;
     try std.posix.clock_gettime(std.posix.CLOCK.REALTIME, &ret);
     return ret.tv_sec;

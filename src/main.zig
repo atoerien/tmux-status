@@ -25,20 +25,25 @@ pub fn main() !void {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
+    const ctx = lib.Context{
+        .allocator = allocator,
+        .stdout = stdout.any(),
+    };
+
     if (args.len < 2) {
         //
     } else if (std.mem.eql(u8, args[1], "left")) {
-        try whoami.run(allocator, stdout.any());
-        try hostname.run(allocator, stdout.any());
+        try whoami.run(&ctx);
+        try hostname.run(&ctx);
     } else if (std.mem.eql(u8, args[1], "right")) {
-        try load_average.run(stdout.any());
-        try processes.run(allocator, stdout.any());
-        try cpu_count.run(stdout.any());
-        // try cpu_freq.run(allocator, stdout.any());
-        try memory.run(stdout.any());
-        try swap.run(stdout.any());
-        try disk.run(stdout.any());
-        try uptime.run(stdout.any());
+        try load_average.run(&ctx);
+        try processes.run(&ctx);
+        try cpu_count.run(&ctx);
+        // try cpu_freq.run(&ctx);
+        try memory.run(&ctx);
+        try swap.run(&ctx);
+        try disk.run(&ctx);
+        try uptime.run(&ctx);
     }
     try bw.flush();
 }
