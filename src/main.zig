@@ -3,6 +3,7 @@ const std = @import("std");
 const lib = @import("lib.zig");
 
 const cpu_count = @import("cpu_count.zig");
+const cpu_freq = @import("cpu_freq.zig");
 const disk = @import("disk.zig");
 const hostname = @import("hostname.zig");
 const load_average = @import("load_average.zig");
@@ -33,6 +34,7 @@ pub fn main() !void {
         try load_average.run(stdout.any());
         try processes.run(allocator, stdout.any());
         try cpu_count.run(stdout.any());
+        // try cpu_freq.run(allocator, stdout.any());
         try memory.run(stdout.any());
         try swap.run(stdout.any());
         try disk.run(stdout.any());
