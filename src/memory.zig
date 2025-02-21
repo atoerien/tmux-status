@@ -53,7 +53,7 @@ fn memoryLinux(allocator: std.mem.Allocator) !Memory {
     var line = std.ArrayList(u8).init(allocator);
     const lineWriter = line.writer();
     defer line.deinit();
-    while (true) {
+    while (true) : (line.clearRetainingCapacity()) {
         reader.streamUntilDelimiter(lineWriter, '\n', null) catch |err| switch (err) {
             error.EndOfStream => {
                 if (line.items.len == 0)
@@ -88,7 +88,6 @@ fn memoryLinux(allocator: std.mem.Allocator) !Memory {
                     break;
             }
         }
-        line.clearRetainingCapacity();
     }
 
     if (o_total == null)

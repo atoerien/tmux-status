@@ -25,7 +25,7 @@ fn cpuFreqLinux(allocator: std.mem.Allocator) !f64 {
         var line = std.ArrayList(u8).init(allocator);
         const lineWriter = line.writer();
         defer line.deinit();
-        while (true) {
+        while (true) : (line.clearRetainingCapacity()) {
             reader.streamUntilDelimiter(lineWriter, '\n', null) catch |err| switch (err) {
                 error.EndOfStream => {
                     if (line.items.len == 0)
@@ -41,7 +41,6 @@ fn cpuFreqLinux(allocator: std.mem.Allocator) !f64 {
                     return hz / 1000;
                 }
             }
-            line.clearRetainingCapacity();
         }
     }
     return error.Unavailable;
