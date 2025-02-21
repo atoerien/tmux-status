@@ -200,7 +200,7 @@ pub fn run(ctx: *const lib.Context) !void {
 
     try lib.color(stdout, .{ .color_attr = .{ .attr = "bold", .bg = "brightmagenta", .fg = "brightwhite" } });
     _ = try stdout.write("◂");
-    const rd_unit = try lib.printSize(stdout, read);
+    const rd_unit = try lib.printSize(stdout, read, 1024);
     try lib.color(stdout, .none);
 
     try lib.color(stdout, .{ .color = .{ .bg = "brightmagenta", .fg = "brightwhite" } });
@@ -209,7 +209,7 @@ pub fn run(ctx: *const lib.Context) !void {
 
     try lib.color(stdout, .{ .color_attr = .{ .attr = "bold", .bg = "brightmagenta", .fg = "brightwhite" } });
     _ = try stdout.write("▸");
-    const wr_unit = try lib.printSize(stdout, write);
+    const wr_unit = try lib.printSize(stdout, write, 1024);
     try lib.color(stdout, .none);
 
     try lib.color(stdout, .{ .color = .{ .bg = "brightmagenta", .fg = "brightwhite" } });

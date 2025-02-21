@@ -50,7 +50,7 @@ pub fn color(out: std.io.AnyWriter, col: Color) !void {
 
 /// formats and prints val to stdout
 /// returns unit ("k", "M", "G", etc)
-pub fn printSize(stdout: std.io.AnyWriter, val: f64) ![]const u8 {
+pub fn printSize(stdout: std.io.AnyWriter, val: f64, comptime divisor: comptime_int) ![]const u8 {
     var size = val;
 
     if (@abs(size) < 1) {
@@ -72,7 +72,7 @@ pub fn printSize(stdout: std.io.AnyWriter, val: f64) ![]const u8 {
             try stdout.print("{d:3.0}", .{size});
             return unit;
         }
-        size /= 1024;
+        size /= divisor;
     }
 
     try stdout.print("{d:3.1}", .{size});

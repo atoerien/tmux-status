@@ -9,6 +9,7 @@ const disk_io = @import("disk_io.zig");
 const hostname = @import("hostname.zig");
 const load_average = @import("load_average.zig");
 const memory = @import("memory.zig");
+const network = @import("network.zig");
 const processes = @import("processes.zig");
 const swap = @import("swap.zig");
 const uptime = @import("uptime.zig");
@@ -49,6 +50,7 @@ pub fn main() !void {
         try swap.run(&ctx);
         try disk.run(&ctx);
         try disk_io.run(&ctx);
+        try network.run(&ctx);
         try uptime.run(&ctx);
     }
     try bw.flush();

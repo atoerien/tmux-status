@@ -64,7 +64,7 @@ pub fn run(ctx: *const lib.Context) !void {
 
     try lib.color(stdout, .{ .color_attr = .{ .attr = "bold", .bg = "brightgreen", .fg = "black" } });
     _ = try stdout.write("s");
-    const unit = try lib.printSize(stdout, total);
+    const unit = try lib.printSize(stdout, total, 1024);
     try lib.color(stdout, .none);
 
     try lib.color(stdout, .{ .color = .{ .bg = "brightgreen", .fg = "black" } });

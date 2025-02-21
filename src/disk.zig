@@ -42,7 +42,7 @@ pub fn run(ctx: *const lib.Context) !void {
     const stdout = ctx.stdout;
 
     try lib.color(stdout, .{ .color_attr = .{ .attr = "bold", .bg = "magenta", .fg = "brightwhite" } });
-    const unit = try lib.printSize(stdout, total);
+    const unit = try lib.printSize(stdout, total, 1024);
     try lib.color(stdout, .none);
 
     try lib.color(stdout, .{ .color = .{ .bg = "magenta", .fg = "brightwhite" } });
