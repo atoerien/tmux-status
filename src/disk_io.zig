@@ -142,11 +142,11 @@ fn diskIoLinux() !DiskIo {
     var write: usize = undefined;
 
     var it = std.mem.tokenizeScalar(u8, buf[0..len], ' ');
-    for (0..8) |i| {
+    for (0..7) |i| {
         const field = it.next() orelse return error.Unexpected;
         switch (i) {
-            3 => read = try std.fmt.parseUnsigned(usize, field, 10),
-            7 => write = try std.fmt.parseUnsigned(usize, field, 10),
+            2 => read = try std.fmt.parseUnsigned(usize, field, 10),
+            6 => write = try std.fmt.parseUnsigned(usize, field, 10),
             else => {},
         }
     }

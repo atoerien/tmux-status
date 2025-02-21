@@ -109,7 +109,7 @@ fn networkLinux(allocator: std.mem.Allocator) !Network {
         };
 
         var it = std.mem.tokenizeAny(u8, line.items, " :");
-        for (0..17) |i| {
+        for (0..11) |i| {
             const field = it.next() orelse return error.Unexpected;
             switch (i) {
                 0 => {
