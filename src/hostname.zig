@@ -3,10 +3,9 @@ const std = @import("std");
 const lib = @import("lib.zig");
 
 fn hostname(allocator: std.mem.Allocator) ![]const u8 {
-    var buf = try allocator.alloc(u8, std.posix.HOST_NAME_MAX);
-    errdefer allocator.free(buf);
-
-    return try std.posix.gethostname(@ptrCast(&buf));
+    var buf: [std.posix.HOST_NAME_MAX]u8 = undefined;
+    const ret = try std.posix.gethostname(&buf);
+    return try allocator.dupe(u8, ret);
 }
 
 pub fn run(ctx: *const lib.Context) !void {
