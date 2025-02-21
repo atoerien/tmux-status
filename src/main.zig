@@ -8,6 +8,7 @@ const disk = @import("disk.zig");
 const disk_io = @import("disk_io.zig");
 const hostname = @import("hostname.zig");
 const load_average = @import("load_average.zig");
+const logo = @import("logo.zig");
 const memory = @import("memory.zig");
 const network = @import("network.zig");
 const processes = @import("processes.zig");
@@ -39,6 +40,7 @@ pub fn main() !void {
     if (args.len < 2) {
         //
     } else if (std.mem.eql(u8, args[1], "left")) {
+        try logo.run(&ctx);
         try whoami.run(&ctx);
         try hostname.run(&ctx);
     } else if (std.mem.eql(u8, args[1], "right")) {
