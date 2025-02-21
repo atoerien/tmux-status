@@ -6,8 +6,6 @@ const c = @cImport({
         @cInclude("mach/mach.h");
         @cInclude("mach/vm_statistics.h");
         @cInclude("unistd.h");
-    } else if (builtin.os.tag == .linux) {
-        @cInclude("sys/sysinfo.h");
     }
 });
 
@@ -41,36 +39,90 @@ fn memoryDarwin() !Memory {
     };
 }
 
-fn memoryLinux() !Memory {
-    var sysinfo: c.struct_sysinfo = undefined;
-    const ret = c.sysinfo(&sysinfo);
-    if (ret == -1) {
-        const errno = std.c._errno().*;
-        return lib.errnoToZigErr(errno);
+fn memoryLinux(allocator: std.mem.Allocator) !Memory {
+    var meminfo = try std.fs.openFileAbsolute("/proc/meminfo", .{});
+    defer meminfo.close();
+
+    var o_total: ?usize = null;
+    var o_free: ?usize = null;
+    var o_avail: ?usize = null;
+    var o_buffers: ?usize = null;
+    var o_cached: ?usize = null;
+
+    var reader = meminfo.reader();
+    var line = std.ArrayList(u8).init(allocator);
+    const lineWriter = line.writer();
+    defer line.deinit();
+    while (true) {
+        reader.streamUntilDelimiter(lineWriter, '\n', null) catch |err| switch (err) {
+            error.EndOfStream => {
+                if (line.items.len == 0)
+                    break;
+            },
+            else => |e| return e,
+        };
+        const l = line.items;
+        if (std.mem.indexOfScalar(u8, l, ':')) |i| {
+            const key = l[0..i];
+            var v = std.mem.trimLeft(u8, l[i + 1 ..], " ");
+            if (std.mem.endsWith(u8, v, " kB")) {
+                v = v[0 .. v.len - 3];
+            }
+            const val = try std.fmt.parseUnsigned(usize, v, 10);
+
+            if (std.mem.eql(u8, key, "MemTotal")) {
+                o_total = val;
+            } else if (std.mem.eql(u8, key, "MemFree")) {
+                o_free = val;
+            } else if (std.mem.eql(u8, key, "MemAvailable")) {
+                o_avail = val;
+                // should already have total
+                if (o_total != null)
+                    break;
+            } else if (std.mem.eql(u8, key, "Buffers")) {
+                o_buffers = val;
+            } else if (std.mem.eql(u8, key, "Cached")) {
+                o_cached = val;
+                // should already have total, free and buffers
+                if (o_total != null and o_free != null and o_buffers != null)
+                    break;
+            }
+        }
+        line.clearRetainingCapacity();
     }
 
-    const mem_unit = sysinfo.mem_unit;
-    const total = sysinfo.totalram * mem_unit;
-    const avail = (sysinfo.freeram + sysinfo.sharedram + sysinfo.bufferram) * mem_unit;
+    if (o_total == null)
+        return error.Unexpected;
+
+    const total = o_total.?;
+
+    var used: usize = undefined;
+    if (o_avail) |avail| {
+        used = total - avail;
+    } else if (o_free != null and o_buffers != null and o_cached != null) {
+        used = total - o_free.? - o_buffers.? - o_cached.?;
+    } else {
+        return error.Unexpected;
+    }
 
     return .{
-        .used = total - avail,
-        .total = total,
+        .used = used * 1024,
+        .total = total * 1024,
     };
 }
 
-fn memory() !Memory {
+fn memory(allocator: std.mem.Allocator) !Memory {
     if (builtin.os.tag.isDarwin()) {
         return try memoryDarwin();
     } else if (builtin.os.tag == .linux) {
-        return try memoryLinux();
+        return try memoryLinux(allocator);
     } else {
         @compileError("unsupported OS");
     }
 }
 
 pub fn run(ctx: *const lib.Context) !void {
-    const mem = try memory();
+    const mem = try memory(ctx.allocator);
 
     const used: f64 = @floatFromInt(mem.used);
     const total: f64 = @floatFromInt(mem.total);
