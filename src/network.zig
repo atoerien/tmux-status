@@ -44,8 +44,6 @@ const Network = struct {
     }
 };
 
-const main = @import("main.zig");
-
 fn networkDarwin() !Network {
     const interface = "en0";
 

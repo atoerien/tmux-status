@@ -49,8 +49,6 @@ const DiskIo = struct {
     }
 };
 
-const main = @import("main.zig");
-
 fn diskIoDarwin() !DiskIo {
     const disk = "disk0";
 
