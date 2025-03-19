@@ -54,15 +54,15 @@ fn diskIoDarwin() !DiskIo {
 
     var ret: std.c.kern_return_t = undefined;
 
-    var mainPort: std.c.mach_port_t = undefined;
-    ret = c.IOMainPort(c.MACH_PORT_NULL, &mainPort);
+    var main_port: std.c.mach_port_t = undefined;
+    ret = c.IOMainPort(c.MACH_PORT_NULL, &main_port);
     switch (lib.getKernError(ret)) {
         .SUCCESS => {},
         else => |err| return lib.unexpectedKernError(err),
     }
 
     var drive_iter: c.io_iterator_t = undefined;
-    ret = c.IOServiceGetMatchingServices(mainPort, c.IOBSDNameMatching(mainPort, c.kNilOptions, disk), &drive_iter);
+    ret = c.IOServiceGetMatchingServices(main_port, c.IOBSDNameMatching(main_port, c.kNilOptions, disk), &drive_iter);
     switch (lib.getKernError(ret)) {
         .SUCCESS => {},
         else => |err| return lib.unexpectedKernError(err),
@@ -169,12 +169,12 @@ fn diskIo() !DiskIo {
 pub fn run(ctx: *const lib.Context) !void {
     const io = try diskIo();
 
-    const cachePath = try ctx.getModuleCachePath("disk_io");
-    defer ctx.allocator.free(cachePath);
+    const cache_path = try ctx.getModuleCachePath("disk_io");
+    defer ctx.allocator.free(cache_path);
 
-    const r_cache = DiskIo.load(cachePath);
+    const r_cache = DiskIo.load(cache_path);
 
-    try io.save(cachePath);
+    try io.save(cache_path);
 
     const cache = r_cache catch return;
 

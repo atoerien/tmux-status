@@ -51,10 +51,10 @@ fn memoryLinux(allocator: std.mem.Allocator) !Memory {
 
     var reader = meminfo.reader();
     var line = std.ArrayList(u8).init(allocator);
-    const lineWriter = line.writer();
+    const line_writer = line.writer();
     defer line.deinit();
     while (true) : (line.clearRetainingCapacity()) {
-        reader.streamUntilDelimiter(lineWriter, '\n', null) catch |err| switch (err) {
+        reader.streamUntilDelimiter(line_writer, '\n', null) catch |err| switch (err) {
             error.EndOfStream => {
                 if (line.items.len == 0)
                     break;

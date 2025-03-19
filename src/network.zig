@@ -95,10 +95,10 @@ fn networkLinux(allocator: std.mem.Allocator) !Network {
     try reader.skipUntilDelimiterOrEof('\n');
 
     var line = std.ArrayList(u8).init(allocator);
-    const lineWriter = line.writer();
+    const line_writer = line.writer();
     defer line.deinit();
     outer: while (true) : (line.clearRetainingCapacity()) {
-        reader.streamUntilDelimiter(lineWriter, '\n', null) catch |err| switch (err) {
+        reader.streamUntilDelimiter(line_writer, '\n', null) catch |err| switch (err) {
             error.EndOfStream => {
                 if (line.items.len == 0)
                     break;
@@ -144,12 +144,12 @@ fn network(allocator: std.mem.Allocator) !Network {
 pub fn run(ctx: *const lib.Context) !void {
     const net = try network(ctx.allocator);
 
-    const cachePath = try ctx.getModuleCachePath("network");
-    defer ctx.allocator.free(cachePath);
+    const cache_path = try ctx.getModuleCachePath("network");
+    defer ctx.allocator.free(cache_path);
 
-    const r_cache = Network.load(cachePath);
+    const r_cache = Network.load(cache_path);
 
-    try net.save(cachePath);
+    try net.save(cache_path);
 
     const cache = r_cache catch return;
 

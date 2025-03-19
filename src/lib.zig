@@ -4,10 +4,10 @@ const std = @import("std");
 pub const Context = struct {
     allocator: std.mem.Allocator,
     stdout: std.io.AnyWriter,
-    cacheDir: []const u8,
+    cache_dir: []const u8,
 
     pub fn getModuleCachePath(self: *const Context, module: []const u8) ![]u8 {
-        const paths = [_][]const u8{ self.cacheDir, module };
+        const paths = [_][]const u8{ self.cache_dir, module };
         return std.fs.path.join(self.allocator, &paths);
     }
 };
@@ -132,16 +132,16 @@ pub fn getTmuxSocketPath(allocator: std.mem.Allocator) ![]u8 {
 }
 
 pub fn getCacheDir(allocator: std.mem.Allocator) ![]u8 {
-    const socketPath = try getTmuxSocketPath(allocator);
-    defer allocator.free(socketPath);
-    const dir = std.fs.path.dirname(socketPath) orelse unreachable;
-    const cacheDir = try std.fmt.allocPrint(allocator, "{s}/cache", .{dir});
+    const socket_path = try getTmuxSocketPath(allocator);
+    defer allocator.free(socket_path);
+    const dir = std.fs.path.dirname(socket_path) orelse unreachable;
+    const cache_dir = try std.fmt.allocPrint(allocator, "{s}/cache", .{dir});
     // ensure dir exists
-    std.fs.makeDirAbsolute(cacheDir) catch |err| switch (err) {
+    std.fs.makeDirAbsolute(cache_dir) catch |err| switch (err) {
         error.PathAlreadyExists => {}, // ignore
         else => |e| return e,
     };
-    return cacheDir;
+    return cache_dir;
 }
 
 pub fn getNow() !isize {

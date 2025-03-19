@@ -41,13 +41,13 @@ pub fn main() !void {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
-    const cacheDir = try lib.getCacheDir(allocator);
-    defer allocator.free(cacheDir);
+    const cache_dir = try lib.getCacheDir(allocator);
+    defer allocator.free(cache_dir);
 
     const ctx = lib.Context{
         .allocator = allocator,
         .stdout = stdout.any(),
-        .cacheDir = cacheDir,
+        .cache_dir = cache_dir,
     };
 
     for (args[1..]) |arg| {
