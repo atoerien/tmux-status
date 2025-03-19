@@ -23,9 +23,9 @@ fn memoryDarwin() !Memory {
     var stats: c.vm_statistics64 = undefined;
     var count: c.mach_msg_type_number_t = @sizeOf(c.vm_statistics64) / @sizeOf(c.integer_t);
     const ret = c.host_statistics64(host, c.HOST_VM_INFO64, @ptrCast(&stats), &count);
-    switch (std.c.getKernError(ret)) {
+    switch (lib.getKernError(ret)) {
         .SUCCESS => {},
-        else => |err| return std.c.unexpectedKernError(err),
+        else => |err| return lib.unexpectedKernError(err),
     }
 
     const page_size = @as(usize, @intCast(c.getpagesize()));

@@ -14,7 +14,7 @@ fn uptimeDarwin() !isize {
 
     const boottime = try lib.getsysctl(std.posix.timespec, "kern.boottime");
 
-    return now - boottime.tv_sec;
+    return now - boottime.sec;
 }
 
 fn uptimeLinux() !isize {

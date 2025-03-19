@@ -56,16 +56,16 @@ fn diskIoDarwin() !DiskIo {
 
     var mainPort: std.c.mach_port_t = undefined;
     ret = c.IOMainPort(c.MACH_PORT_NULL, &mainPort);
-    switch (std.c.getKernError(ret)) {
+    switch (lib.getKernError(ret)) {
         .SUCCESS => {},
-        else => |err| return std.c.unexpectedKernError(err),
+        else => |err| return lib.unexpectedKernError(err),
     }
 
     var drive_iter: c.io_iterator_t = undefined;
     ret = c.IOServiceGetMatchingServices(mainPort, c.IOBSDNameMatching(mainPort, c.kNilOptions, disk), &drive_iter);
-    switch (std.c.getKernError(ret)) {
+    switch (lib.getKernError(ret)) {
         .SUCCESS => {},
-        else => |err| return std.c.unexpectedKernError(err),
+        else => |err| return lib.unexpectedKernError(err),
     }
     defer _ = c.IOObjectRelease(drive_iter);
 
@@ -80,9 +80,9 @@ fn diskIoDarwin() !DiskIo {
 
     var driver: c.io_registry_entry_t = undefined;
     ret = c.IORegistryEntryGetParentEntry(drive, c.kIOServicePlane, &driver);
-    switch (std.c.getKernError(ret)) {
+    switch (lib.getKernError(ret)) {
         .SUCCESS => {},
-        else => |err| return std.c.unexpectedKernError(err),
+        else => |err| return lib.unexpectedKernError(err),
     }
     defer _ = c.IOObjectRelease(driver);
     if (c.IOObjectConformsTo(driver, "IOBlockStorageDriver") == 0) {
@@ -93,9 +93,9 @@ fn diskIoDarwin() !DiskIo {
 
     var properties: c.CFMutableDictionaryRef = undefined;
     ret = c.IORegistryEntryCreateCFProperties(driver, &properties, c.kCFAllocatorDefault, c.kNilOptions);
-    switch (std.c.getKernError(ret)) {
+    switch (lib.getKernError(ret)) {
         .SUCCESS => {},
-        else => |err| return std.c.unexpectedKernError(err),
+        else => |err| return lib.unexpectedKernError(err),
     }
     defer c.CFRelease(properties);
 

@@ -13,7 +13,7 @@ pub fn build(b: *std.Build) void {
     });
 
     // src/disk_io.zig
-    if (target.result.isDarwin()) {
+    if (target.result.os.tag.isDarwin()) {
         exe.linkFramework("CoreFoundation");
         exe.linkFramework("IOKit");
     }
