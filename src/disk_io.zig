@@ -49,8 +49,9 @@ const DiskIo = struct {
     }
 };
 
-fn diskIoDarwin() !DiskIo {
-    const disk = "disk0";
+fn diskIoDarwin(allocator: std.mem.Allocator, disk: []const u8) !DiskIo {
+    const disk_cstr = try lib.allocCString(allocator, disk);
+    defer allocator.free(disk_cstr);
 
     var ret: std.c.kern_return_t = undefined;
 
@@ -62,7 +63,7 @@ fn diskIoDarwin() !DiskIo {
     }
 
     var drive_iter: c.io_iterator_t = undefined;
-    ret = c.IOServiceGetMatchingServices(main_port, c.IOBSDNameMatching(main_port, c.kNilOptions, disk), &drive_iter);
+    ret = c.IOServiceGetMatchingServices(main_port, c.IOBSDNameMatching(main_port, c.kNilOptions, disk_cstr), &drive_iter);
     switch (lib.getKernError(ret)) {
         .SUCCESS => {},
         else => |err| return lib.unexpectedKernError(err),
@@ -123,11 +124,9 @@ fn diskIoDarwin() !DiskIo {
     };
 }
 
-fn diskIoLinux() !DiskIo {
-    const disk = "sda";
-
-    var pathBuf: [std.posix.PATH_MAX]u8 = undefined;
-    const path = try std.fmt.bufPrint(&pathBuf, "/sys/block/{s}/stat", .{disk});
+fn diskIoLinux(disk: []const u8) !DiskIo {
+    var path_buf: [std.posix.PATH_MAX]u8 = undefined;
+    const path = try std.fmt.bufPrint(&path_buf, "/sys/block/{s}/stat", .{disk});
     const file = try std.fs.openFileAbsolute(path, .{});
     defer file.close();
 
@@ -156,18 +155,18 @@ fn diskIoLinux() !DiskIo {
     };
 }
 
-fn diskIo() !DiskIo {
+fn diskIo(allocator: std.mem.Allocator, disk: []const u8) !DiskIo {
     if (builtin.os.tag.isDarwin()) {
-        return try diskIoDarwin();
+        return try diskIoDarwin(allocator, disk);
     } else if (builtin.os.tag == .linux) {
-        return try diskIoLinux();
+        return try diskIoLinux(disk);
     } else {
         @compileError("unsupported OS");
     }
 }
 
-pub fn run(ctx: *const lib.Context) !void {
-    const io = try diskIo();
+pub fn run(ctx: *const lib.Context, disk: []const u8) !void {
+    const io = try diskIo(ctx.allocator, disk);
 
     const cache_path = try ctx.getModuleCachePath("disk_io");
     defer ctx.allocator.free(cache_path);

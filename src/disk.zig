@@ -12,8 +12,7 @@ const Disk = struct {
     total: usize,
 };
 
-fn disk() !Disk {
-    const mountpoint = "/";
+fn disk(mountpoint: []const u8) !Disk {
     var statvfs: c.struct_statvfs = undefined;
     const mountpoint_c = try std.posix.toPosixPath(mountpoint);
     const ret = c.statvfs(&mountpoint_c, &statvfs);
@@ -32,8 +31,8 @@ fn disk() !Disk {
     };
 }
 
-pub fn run(ctx: *const lib.Context) !void {
-    const df = try disk();
+pub fn run(ctx: *const lib.Context, mountpoint: []const u8) !void {
+    const df = try disk(mountpoint);
 
     const used: f64 = @floatFromInt(df.used);
     const total: f64 = @floatFromInt(df.total);

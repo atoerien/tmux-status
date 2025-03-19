@@ -44,9 +44,7 @@ const Network = struct {
     }
 };
 
-fn networkDarwin() !Network {
-    const interface = "en0";
-
+fn networkDarwin(interface: []const u8) !Network {
     var ifa_list: ?*c.ifaddrs = null;
 
     const ret = c.getifaddrs(&ifa_list);
@@ -77,9 +75,7 @@ fn networkDarwin() !Network {
     return error.Invalid;
 }
 
-fn networkLinux(allocator: std.mem.Allocator) !Network {
-    const interface = "enp4s0";
-
+fn networkLinux(allocator: std.mem.Allocator, interface: []const u8) !Network {
     const file = try std.fs.openFileAbsolute("/proc/net/dev", .{});
     defer file.close();
 
@@ -131,18 +127,18 @@ fn networkLinux(allocator: std.mem.Allocator) !Network {
     };
 }
 
-fn network(allocator: std.mem.Allocator) !Network {
+fn network(allocator: std.mem.Allocator, interface: []const u8) !Network {
     if (builtin.os.tag.isDarwin()) {
-        return try networkDarwin();
+        return try networkDarwin(interface);
     } else if (builtin.os.tag == .linux) {
-        return try networkLinux(allocator);
+        return try networkLinux(allocator, interface);
     } else {
         @compileError("unsupported OS");
     }
 }
 
-pub fn run(ctx: *const lib.Context) !void {
-    const net = try network(ctx.allocator);
+pub fn run(ctx: *const lib.Context, interface: []const u8) !void {
+    const net = try network(ctx.allocator, interface);
 
     const cache_path = try ctx.getModuleCachePath("network");
     defer ctx.allocator.free(cache_path);

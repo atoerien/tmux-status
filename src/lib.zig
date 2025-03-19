@@ -161,6 +161,12 @@ pub fn getsysctl(comptime T: type, name: [*:0]const u8) !T {
     return ret;
 }
 
+pub fn allocCString(allocator: std.mem.Allocator, s: []const u8) ![:0]u8 {
+    const ret = try allocator.allocSentinel(u8, s.len, 0);
+    @memcpy(ret, s);
+    return ret;
+}
+
 // removed from std, copied from https://github.com/ziglang/zig/blob/master/src/link.zig
 
 pub fn getKernError(err: std.c.kern_return_t) KernE {

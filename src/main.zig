@@ -18,12 +18,23 @@ const modules = struct {
     pub const whoami = @import("whoami.zig");
 };
 
-fn runModule(mod: []const u8, ctx: *const lib.Context) !void {
+fn runModule(mod: []const u8, args: [][]const u8, ctx: *const lib.Context) !void {
     inline for (@typeInfo(modules).@"struct".decls) |decl| {
         if (std.mem.eql(u8, mod, decl.name)) {
             const module = @field(modules, decl.name);
-            try module.run(ctx);
-            return;
+            const run = module.run;
+            const run_argcount = @typeInfo(@TypeOf(run)).@"fn".params.len - 1;
+            if (args.len < run_argcount) {
+                return error.NotEnoughArgs;
+            } else if (args.len > run_argcount) {
+                return error.TooManyArgs;
+            }
+            var run_args: std.meta.ArgsTuple(@TypeOf(run)) = undefined;
+            run_args[0] = ctx;
+            inline for (0..run_argcount) |i| {
+                run_args[i + 1] = args[i];
+            }
+            return @call(.auto, run, run_args);
         }
     }
     return error.InvalidModule;
@@ -50,8 +61,15 @@ pub fn main() !void {
         .cache_dir = cache_dir,
     };
 
+    var mod_args = std.ArrayList([]const u8).init(allocator);
     for (args[1..]) |arg| {
-        try runModule(arg, &ctx);
+        mod_args.clearRetainingCapacity();
+        var it = std.mem.splitScalar(u8, arg, ':');
+        const mod = it.next().?;
+        while (it.next()) |a| {
+            try mod_args.append(a);
+        }
+        try runModule(mod, mod_args.items, &ctx);
     }
     try bw.flush();
 }
