@@ -53,7 +53,7 @@ fn processes(allocator: std.mem.Allocator) !usize {
     } else if (builtin.os.tag == .linux) {
         return try processesLinux();
     } else {
-        @compileError("unsupported OS");
+        return error.Unsupported;
     }
 }
 

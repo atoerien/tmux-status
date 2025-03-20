@@ -52,7 +52,7 @@ fn cpuFreq(allocator: std.mem.Allocator) !f64 {
     } else if (builtin.os.tag == .linux) {
         return try cpuFreqLinux(allocator);
     } else {
-        @compileError("unsupported OS");
+        return error.Unsupported;
     }
 }
 

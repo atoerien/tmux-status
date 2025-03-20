@@ -49,7 +49,7 @@ fn swap() !Swap {
     } else if (builtin.os.tag == .linux) {
         return try swapLinux();
     } else {
-        @compileError("unsupported OS");
+        return error.Unsupported;
     }
 }
 

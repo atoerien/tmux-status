@@ -133,7 +133,7 @@ fn network(allocator: std.mem.Allocator, interface: []const u8) !Network {
     } else if (builtin.os.tag == .linux) {
         return try networkLinux(allocator, interface);
     } else {
-        @compileError("unsupported OS");
+        return error.Unsupported;
     }
 }
 

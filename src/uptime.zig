@@ -33,7 +33,7 @@ fn uptime() !isize {
     } else if (builtin.os.tag == .linux) {
         return try uptimeLinux();
     } else {
-        @compileError("unsupported OS");
+        return error.Unsupported;
     }
 }
 

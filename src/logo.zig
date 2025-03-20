@@ -17,7 +17,7 @@ fn logo() []const u8 {
     } else if (builtin.os.tag == .linux) {
         return logoLinux();
     } else {
-        @compileError("unsupported OS");
+        return error.Unsupported;
     }
 }
 

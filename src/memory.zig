@@ -116,7 +116,7 @@ fn memory(allocator: std.mem.Allocator) !Memory {
     } else if (builtin.os.tag == .linux) {
         return try memoryLinux(allocator);
     } else {
-        @compileError("unsupported OS");
+        return error.Unsupported;
     }
 }
 

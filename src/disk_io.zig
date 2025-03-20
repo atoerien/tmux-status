@@ -161,7 +161,7 @@ fn diskIo(allocator: std.mem.Allocator, disk: []const u8) !DiskIo {
     } else if (builtin.os.tag == .linux) {
         return try diskIoLinux(disk);
     } else {
-        @compileError("unsupported OS");
+        return error.Unsupported;
     }
 }
 
