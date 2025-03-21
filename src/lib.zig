@@ -135,13 +135,27 @@ pub fn getCacheDir(allocator: std.mem.Allocator) ![]u8 {
     const socket_path = try getTmuxSocketPath(allocator);
     defer allocator.free(socket_path);
     const dir = std.fs.path.dirname(socket_path) orelse unreachable;
-    const cache_dir = try std.fmt.allocPrint(allocator, "{s}/cache", .{dir});
-    // ensure dir exists
+    return try std.fmt.allocPrint(allocator, "{s}/cache", .{dir});
+}
+
+pub fn ensureCacheDir(cache_dir: []const u8) !void {
     std.fs.makeDirAbsolute(cache_dir) catch |err| switch (err) {
         error.PathAlreadyExists => {}, // ignore
         else => |e| return e,
     };
-    return cache_dir;
+}
+
+pub fn clearCacheDir(cache_dir: []const u8) !void {
+    var dir = std.fs.openDirAbsolute(cache_dir, .{ .iterate = true }) catch |err| switch (err) {
+        error.FileNotFound => return, // nothing to do
+        else => |e| return e,
+    };
+    defer dir.close();
+
+    var it = dir.iterate();
+    while (try it.next()) |entry| {
+        try dir.deleteTree(entry.name);
+    }
 }
 
 pub fn getNow() !isize {

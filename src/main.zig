@@ -55,6 +55,13 @@ pub fn main() !void {
     const cache_dir = try lib.getCacheDir(allocator);
     defer allocator.free(cache_dir);
 
+    if (args.len == 2 and std.mem.eql(u8, args[1], "reset")) {
+        try lib.clearCacheDir(cache_dir);
+        return;
+    }
+
+    try lib.ensureCacheDir(cache_dir);
+
     const ctx = lib.Context{
         .allocator = allocator,
         .stdout = stdout.any(),
