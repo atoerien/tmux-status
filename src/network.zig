@@ -111,7 +111,7 @@ fn networkLinux(allocator: std.mem.Allocator, interface: []const u8) !Network {
                         continue :outer;
                 },
                 1 => o_down = try std.fmt.parseUnsigned(usize, field, 10),
-                10 => o_up = try std.fmt.parseUnsigned(usize, field, 10),
+                9 => o_up = try std.fmt.parseUnsigned(usize, field, 10),
                 else => {},
             }
         }
