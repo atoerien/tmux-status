@@ -1,0 +1,224 @@
+const builtin = @import("builtin");
+const std = @import("std");
+
+const c = @cImport({
+    if (builtin.os.tag.isDarwin()) {
+        // prevent CFSTR() from trying to use a nonexistent compiler builtin
+        @cUndef("__CONSTANT_CFSTRINGS__");
+        @cInclude("CoreFoundation/CoreFoundation.h");
+        @cInclude("IOKit/IOBSD.h");
+        @cInclude("IOKit/IOKitLib.h");
+        @cInclude("IOKit/storage/IOBlockStorageDriver.h");
+        @cInclude("IOKit/storage/IOMedia.h");
+    }
+});
+
+const lib = @import("lib.zig");
+
+const DiskIo = struct {
+    time: i128,
+    read: u64,
+    write: u64,
+
+    fn load(path: []const u8) !DiskIo {
+        const file = try std.fs.openFileAbsolute(path, .{});
+        defer file.close();
+
+        var buf: [100]u8 = undefined;
+        const len = try file.read(&buf);
+
+        var it = std.mem.splitScalar(u8, buf[0..len], ' ');
+        const t = try std.fmt.parseInt(i128, it.next() orelse return error.Invalid, 10);
+        const rd = try std.fmt.parseUnsigned(u64, it.next() orelse return error.Invalid, 10);
+        const wr = try std.fmt.parseUnsigned(u64, it.next() orelse return error.Invalid, 10);
+
+        return .{
+            .time = t,
+            .read = rd,
+            .write = wr,
+        };
+    }
+
+    fn save(self: *const DiskIo, path: []const u8) !void {
+        const file = try std.fs.createFileAbsolute(path, .{});
+        defer file.close();
+
+        const writer = file.writer();
+
+        try std.fmt.format(writer, "{} {} {}", .{ self.time, self.read, self.write });
+    }
+};
+
+fn diskIoTotalDarwin() !DiskIo {
+    var io_ret: std.c.kern_return_t = undefined;
+
+    var main_port: std.c.mach_port_t = undefined;
+    io_ret = c.IOMainPort(c.MACH_PORT_NULL, &main_port);
+    switch (lib.getKernError(io_ret)) {
+        .SUCCESS => {},
+        else => |err| return lib.unexpectedKernError(err),
+    }
+
+    var drive_iter: c.io_iterator_t = undefined;
+    io_ret = c.IOServiceGetMatchingServices(main_port, c.IOServiceMatching("IOMedia"), &drive_iter);
+    switch (lib.getKernError(io_ret)) {
+        .SUCCESS => {},
+        else => |err| return lib.unexpectedKernError(err),
+    }
+    defer _ = c.IOObjectRelease(drive_iter);
+
+    const time = try lib.getNowNanos();
+
+    var ret = DiskIo{
+        .time = time,
+        .read = 0,
+        .write = 0,
+    };
+
+    while (true) {
+        const drive = c.IOIteratorNext(drive_iter);
+        if (drive == 0) {
+            break;
+        }
+        defer _ = c.IOObjectRelease(drive);
+
+        var driver: c.io_registry_entry_t = undefined;
+        io_ret = c.IORegistryEntryGetParentEntry(drive, c.kIOServicePlane, &driver);
+        switch (lib.getKernError(io_ret)) {
+            .SUCCESS => {},
+            else => |err| return lib.unexpectedKernError(err),
+        }
+        defer _ = c.IOObjectRelease(driver);
+        if (c.IOObjectConformsTo(driver, "IOBlockStorageDriver") == 0) {
+            continue;
+        }
+
+        var properties: c.CFMutableDictionaryRef = undefined;
+        io_ret = c.IORegistryEntryCreateCFProperties(driver, &properties, c.kCFAllocatorDefault, c.kNilOptions);
+        switch (lib.getKernError(io_ret)) {
+            .SUCCESS => {},
+            else => |err| return lib.unexpectedKernError(err),
+        }
+        defer c.CFRelease(properties);
+
+        const o_stats: c.CFDictionaryRef = @ptrCast(c.CFDictionaryGetValue(properties, c.CFSTR(c.kIOBlockStorageDriverStatisticsKey)));
+        const stats = o_stats orelse return error.Unexpected;
+
+        var o_number: c.CFNumberRef = undefined;
+
+        o_number = @ptrCast(c.CFDictionaryGetValue(stats, c.CFSTR(c.kIOBlockStorageDriverStatisticsBytesReadKey)));
+        if (o_number) |number| {
+            var read: i64 = 0;
+            _ = c.CFNumberGetValue(number, c.kCFNumberSInt64Type, &read);
+            ret.read += @intCast(read);
+        }
+
+        o_number = @ptrCast(c.CFDictionaryGetValue(stats, c.CFSTR(c.kIOBlockStorageDriverStatisticsBytesWrittenKey)));
+        if (o_number) |number| {
+            var write: i64 = 0;
+            _ = c.CFNumberGetValue(number, c.kCFNumberSInt64Type, &write);
+            ret.write += @intCast(write);
+        }
+    }
+
+    return ret;
+}
+
+fn diskIoTotalLinux() !DiskIo {
+    var sys_block = try std.fs.openDirAbsolute("/sys/block", .{ .iterate = true });
+    defer sys_block.close();
+
+    const time = try lib.getNowNanos();
+
+    var ret = DiskIo{
+        .time = time,
+        .read = 0,
+        .write = 0,
+    };
+
+    var dir_it = sys_block.iterate();
+    while (try dir_it.next()) |entry| {
+        var path_buf: [std.posix.PATH_MAX]u8 = undefined;
+        const path = try std.fmt.bufPrint(&path_buf, "{s}/stat", .{entry.name});
+        const file = try sys_block.openFile(path, .{});
+        defer file.close();
+
+        var buf: [1024]u8 = undefined;
+        const len = try file.readAll(&buf);
+
+        var it = std.mem.tokenizeScalar(u8, buf[0..len], ' ');
+        for (0..7) |i| {
+            const field = it.next() orelse return error.Unexpected;
+            switch (i) {
+                2 => {
+                    ret.read += 512 * try std.fmt.parseUnsigned(usize, field, 10);
+                },
+                6 => {
+                    ret.write += 512 * try std.fmt.parseUnsigned(usize, field, 10);
+                },
+                else => {},
+            }
+        }
+    }
+
+    return ret;
+}
+
+fn diskIoTotal() !DiskIo {
+    if (builtin.os.tag.isDarwin()) {
+        return try diskIoTotalDarwin();
+    } else if (builtin.os.tag == .linux) {
+        return try diskIoTotalLinux();
+    } else {
+        return error.Unsupported;
+    }
+}
+
+pub fn run(ctx: *const lib.Context) !void {
+    const io = try diskIoTotal();
+
+    const cache_path = try ctx.getModuleCachePath("disk_io_total");
+    defer ctx.allocator.free(cache_path);
+
+    const r_cache = DiskIo.load(cache_path);
+
+    try io.save(cache_path);
+
+    const cache = r_cache catch return;
+
+    if (io.time <= cache.time) {
+        // time went backwards, or didn't change (prevent div by 0)
+        return;
+    }
+
+    const t1: f64 = @floatFromInt(cache.time);
+    const t2: f64 = @floatFromInt(io.time);
+
+    const rd1: f64 = @floatFromInt(cache.read);
+    const rd2: f64 = @floatFromInt(io.read);
+    const read = (rd2 - rd1) / (t2 - t1) * std.time.ns_per_s;
+
+    const wr1: f64 = @floatFromInt(cache.write);
+    const wr2: f64 = @floatFromInt(io.write);
+    const write = (wr2 - wr1) / (t2 - t1) * std.time.ns_per_s;
+
+    const stdout = ctx.stdout;
+
+    try lib.color(stdout, .{ .color_attr = .{ .attr = "bold", .bg = "brightmagenta", .fg = "brightwhite" } });
+    _ = try stdout.write("◂");
+    const rd_unit = try lib.printSize(stdout, read, 1024);
+    try lib.color(stdout, .none);
+
+    try lib.color(stdout, .{ .color = .{ .bg = "brightmagenta", .fg = "brightwhite" } });
+    try stdout.print("{s}B/s", .{rd_unit});
+    try lib.color(stdout, .end);
+
+    try lib.color(stdout, .{ .color_attr = .{ .attr = "bold", .bg = "brightmagenta", .fg = "brightwhite" } });
+    _ = try stdout.write("▸");
+    const wr_unit = try lib.printSize(stdout, write, 1024);
+    try lib.color(stdout, .none);
+
+    try lib.color(stdout, .{ .color = .{ .bg = "brightmagenta", .fg = "brightwhite" } });
+    try stdout.print("{s}B/s", .{wr_unit});
+    try lib.color(stdout, .end);
+}

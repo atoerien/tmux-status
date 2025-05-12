@@ -7,6 +7,7 @@ const modules = struct {
     pub const cpu_freq = @import("cpu_freq.zig");
     pub const disk = @import("disk.zig");
     pub const disk_io = @import("disk_io.zig");
+    pub const disk_io_total = @import("disk_io_total.zig");
     pub const hostname = @import("hostname.zig");
     pub const load_average = @import("load_average.zig");
     pub const logo = @import("logo.zig");
