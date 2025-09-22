@@ -10,7 +10,6 @@ const modules = struct {
     pub const disk_io_total = @import("disk_io_total.zig");
     pub const hostname = @import("hostname.zig");
     pub const load_average = @import("load_average.zig");
-    pub const logo = @import("logo.zig");
     pub const memory = @import("memory.zig");
     pub const network = @import("network.zig");
     pub const network_total = @import("network_total.zig");
