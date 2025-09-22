@@ -15,6 +15,7 @@ const modules = struct {
     pub const network = @import("network.zig");
     pub const network_total = @import("network_total.zig");
     pub const processes = @import("processes.zig");
+    pub const reboot_required = @import("reboot_required.zig");
     pub const swap = @import("swap.zig");
     pub const temp = @import("temp.zig");
     pub const uptime = @import("uptime.zig");
