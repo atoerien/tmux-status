@@ -17,6 +17,7 @@ const modules = struct {
     pub const reboot_required = @import("reboot_required.zig");
     pub const swap = @import("swap.zig");
     pub const temp = @import("temp.zig");
+    pub const updates_available = @import("updates_available.zig");
     pub const uptime = @import("uptime.zig");
     pub const whoami = @import("whoami.zig");
 };

@@ -104,7 +104,23 @@ pub fn errnoToZigErr(err: anytype) anyerror {
     return error.Unexpected;
 }
 
-pub fn runProcess(allocator: std.mem.Allocator, argv: []const []const u8, max_output_bytes: usize) ![]u8 {
+pub fn runProcess(allocator: std.mem.Allocator, argv: []const []const u8) !void {
+    var child = std.process.Child.init(argv, allocator);
+    child.stdout_behavior = .Ignore;
+    child.stderr_behavior = .Ignore;
+
+    try child.spawn();
+    errdefer {
+        _ = child.kill() catch {};
+    }
+    const term = try child.wait();
+
+    if (term != .Exited or term.Exited != 0) {
+        return error.ChildProcessError;
+    }
+}
+
+pub fn runProcessCaptureStdout(allocator: std.mem.Allocator, argv: []const []const u8, comptime max_output_bytes: usize) ![]u8 {
     var child = std.process.Child.init(argv, allocator);
     child.stdout_behavior = .Pipe;
     child.stderr_behavior = .Pipe;
@@ -115,6 +131,9 @@ pub fn runProcess(allocator: std.mem.Allocator, argv: []const []const u8, max_ou
     defer stderr.deinit(allocator);
 
     try child.spawn();
+    errdefer {
+        _ = child.kill() catch {};
+    }
     try child.collectOutput(allocator, &stdout, &stderr, max_output_bytes);
     const term = try child.wait();
 
@@ -125,10 +144,70 @@ pub fn runProcess(allocator: std.mem.Allocator, argv: []const []const u8, max_ou
     return stdout.toOwnedSlice(allocator);
 }
 
+pub fn runProcessCaptureStderr(allocator: std.mem.Allocator, argv: []const []const u8, comptime max_output_bytes: usize) ![]u8 {
+    var child = std.process.Child.init(argv, allocator);
+    child.stdout_behavior = .Pipe;
+    child.stderr_behavior = .Pipe;
+
+    var stdout = std.ArrayListUnmanaged(u8){};
+    defer stdout.deinit(allocator);
+    var stderr = std.ArrayListUnmanaged(u8){};
+    defer stderr.deinit(allocator);
+
+    try child.spawn();
+    errdefer {
+        _ = child.kill() catch {};
+    }
+    try child.collectOutput(allocator, &stdout, &stderr, max_output_bytes);
+    const term = try child.wait();
+
+    if (term != .Exited or term.Exited != 0) {
+        return error.ChildProcessError;
+    }
+
+    return stderr.toOwnedSlice(allocator);
+}
+
+fn isExecutable(cmd: [*:0]const u8) bool {
+    if (std.posix.faccessatZ(std.posix.AT.FDCWD, cmd, std.posix.X_OK, 0)) {
+        return true;
+    } else |_| {
+        return false;
+    }
+}
+
+pub fn which(allocator: std.mem.Allocator, cmd: []const u8) !?[]u8 {
+    if (cmd.len == 0 or cmd[0] == '/') {
+        if (std.posix.faccessat(std.posix.AT.FDCWD, cmd, std.posix.X_OK, 0)) {
+            return try allocator.dupe(u8, cmd);
+        } else |_| {
+            return null;
+        }
+    }
+
+    const PATH = std.posix.getenvZ("PATH") orelse "/usr/local/bin:/bin/:/usr/bin";
+
+    var path_buf: [std.posix.PATH_MAX]u8 = undefined;
+    var it = std.mem.tokenizeScalar(u8, PATH, ':');
+    while (it.next()) |search_path| {
+        const path_len = search_path.len + cmd.len + 1;
+        if (path_buf.len < path_len + 1) return error.NameTooLong;
+        @memcpy(path_buf[0..search_path.len], search_path);
+        path_buf[search_path.len] = '/';
+        @memcpy(path_buf[search_path.len + 1 ..][0..cmd.len], cmd);
+        path_buf[path_len] = 0;
+        const path = path_buf[0..path_len :0];
+        if (std.posix.faccessatZ(std.posix.AT.FDCWD, path.ptr, std.posix.X_OK, 0)) {
+            return try allocator.dupe(u8, path_buf[0..path_len]);
+        } else |_| {}
+    }
+    return null;
+}
+
 pub fn getTmuxSocketPath(allocator: std.mem.Allocator) ![]u8 {
     const argv = [_][]const u8{ "tmux", "display-message", "-pF", "#{socket_path}" };
 
-    return runProcess(allocator, &argv, 1024);
+    return runProcessCaptureStdout(allocator, &argv, 1024);
 }
 
 pub fn getCacheDir(allocator: std.mem.Allocator) ![]u8 {
@@ -173,6 +252,12 @@ pub fn getsysctl(comptime T: type, name: [*:0]const u8) !T {
     var len: usize = @sizeOf(T);
     try std.posix.sysctlbynameZ(name, &ret, &len, null, 0);
     return ret;
+}
+
+pub fn redirectToNull(fd: std.posix.fd_t) !void {
+    const null_fd = try std.posix.open("/dev/null", .{ .ACCMODE = .RDWR }, 0);
+    defer std.posix.close(null_fd);
+    try std.posix.dup2(null_fd, fd);
 }
 
 pub fn allocCString(allocator: std.mem.Allocator, s: []const u8) ![:0]u8 {
