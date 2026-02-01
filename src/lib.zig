@@ -214,7 +214,7 @@ pub fn getCacheDir(allocator: std.mem.Allocator) ![]u8 {
     const socket_path = try getTmuxSocketPath(allocator);
     defer allocator.free(socket_path);
     const dir = std.fs.path.dirname(socket_path) orelse unreachable;
-    return try std.fmt.allocPrint(allocator, "{s}/cache", .{dir});
+    return try std.fmt.allocPrint(allocator, "{s}/status-cache", .{dir});
 }
 
 pub fn ensureCacheDir(cache_dir: []const u8) !void {
